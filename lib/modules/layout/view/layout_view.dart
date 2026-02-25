@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:news_app/Api/api_manger.dart';
 import 'package:news_app/core/gen/assets.gen.dart';
-
 import '../../home/model/card_model.dart';
+import '../../home/news_cubit/news_cubit.dart';
+import '../../home/sources_cubit/sources_cubit.dart';
 import '../../home/view/home_View.dart';
 import '../widgets/category_card.dart';
 import '../widgets/home_drawer.dart';
@@ -125,10 +127,18 @@ class _categoryState extends State<category> {
                 ],
               ),
             )
-          : HomeView(
-              category: selectedCardCategory!.id,
+          : MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) => NewsCubit(),
+          ),
+          BlocProvider(
+            create: (context) =>
+                SourcesCubit()..getSources(selectedCardCategory!.id),
+          ),
+        ], child: HomeView(category: selectedCardCategory!.id),
+      )
 
-      ),
     );
   }
 

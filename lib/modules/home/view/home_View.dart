@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:news_app/Api/api_manger.dart';
+import 'package:news_app/modules/home/news_cubit/news_cubit.dart';
 import 'package:news_app/modules/home/view/url_view.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../model/card_model.dart';
 import '../model/news_model.dart';
-import '../model/sources_model.dart';
+import '../sources_cubit/sources_cubit.dart';
 import '../widgets/news_card.dart';
 
 class HomeView extends StatefulWidget {
@@ -18,7 +19,6 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  CardModel? selectedCardCategory;
   int selectedIndex = 0;
   String? selectedSource;
 
@@ -26,126 +26,141 @@ class _HomeViewState extends State<HomeView> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        FutureBuilder<SourcesResponse>(
-          future: ApiManger().getSources(widget.category),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
+        BlocBuilder<SourcesCubit, SourcesState>(
+          builder: (context, state) {
+            if (state is SourcesLoading) {
               return const Center(child: CircularProgressIndicator());
             }
 
-            if (snapshot.hasError) {
-              return Center(
-                child: Text(
-                  snapshot.error.toString(),
-                  style: TextStyle(color: Colors.black),
+            if (state is SourcesError) {
+              return const Center(child: Text("Error"));
+            }
+
+            if (state is SourcesLoaded) {
+              final sources = state.sources.sources;
+
+              if (sources.isEmpty) {
+                return const Center(child: Text("No Data"));
+              }
+
+              selectedSource ??= sources.first.id;
+              context.read<NewsCubit>().getNews(selectedSource!);
+
+              return DefaultTabController(
+                length: sources.length,
+                initialIndex:
+                selectedIndex < sources.length ? selectedIndex : 0,
+
+                child: TabBar(
+                  tabAlignment: TabAlignment.start,
+                  isScrollable: true,
+                  onTap: (value) {
+                    setState(() {
+                      selectedIndex = value;
+                      selectedSource = sources[value].id;
+                    });
+
+                    context.read<NewsCubit>().getNews(selectedSource!);
+                  },
+                  tabs: sources
+                      .map((source) => Tab(text: source.name))
+                      .toList(),
                 ),
               );
             }
 
-            if (!snapshot.hasData) {
-              return const Center(
-                child: Text("No Data", style: TextStyle(color: Colors.black)),
-              );
-            }
-
-            var sources = snapshot.data!.sources;
-
-            if (sources.isEmpty) {
-              return const Center(child: Text("No Data"));
-            }
-
-            if (selectedSource == null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                setState(() {
-                  selectedSource = sources.first.id;
-                });
-              });
-            }
-            return DefaultTabController(
-              length: sources.length,
-              // animationDuration: Duration(seconds: 2),
-              initialIndex: selectedIndex,
-
-              child: TabBar(
-                tabAlignment: TabAlignment.start,
-
-                onTap: (value) {
-                  setState(() {
-                    selectedIndex = value;
-                    selectedSource = sources[value].id;
-                  });
-                },
-
-                padding: EdgeInsets.zero,
-                physics: BouncingScrollPhysics(),
-                indicatorColor: Colors.black,
-                indicatorSize: TabBarIndicatorSize.label,
-                indicatorWeight: 2,
-                labelColor: Colors.black,
-                unselectedLabelColor: Colors.grey,
-                labelStyle: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-                unselectedLabelStyle: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-
-                // padding: EdgeInsets.zero,
-                isScrollable: true,
-                tabs: List.generate(sources.length, (index) {
-                  return Tab(text: sources[index].name);
-                }),
-              ),
-            );
+            return const SizedBox();
           },
         ),
-        Expanded(
-          child: selectedSource == null
-              ?  Center(child: CircularProgressIndicator())
-              :
-          FutureBuilder<NewsModel>(
-                  future: ApiManger().getNewsBySource(selectedSource!),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
+        BlocBuilder<NewsCubit, NewsState>(builder:(context, state) {
 
-                    if (snapshot.hasError) {
-                      return Center(child: Text(snapshot.error.toString()));
-                    }
+          if (state is NewsLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (state is NewsError) {
+            return const Center(child: Text("Error"));
+          }
 
-                    final articles = snapshot.data?.articles ?? [];
+          if (state is NewsLoaded) {
+            final articles = state.news.articles;
 
-                    if (articles.isEmpty) {
-                      return const Center(child: Text("No Articles"));
-                    }
 
-                    return ListView.separated(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: articles.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) {
-                        return NewsCard(article: articles[index],
-                        onTap: (){
-                          onCardTap( articles[index].url);
-                        },
-                        );
-                      },
-                    );
-                  },
-                ),
-        ),
+            if (articles.isEmpty) {
+              return const Center(child: Text("No Data"));
+            }
+            return Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: articles.length,
+                separatorBuilder: (_, __) =>
+                const SizedBox(height: 10),
+                itemBuilder: (context, index) {
+                  return NewsCard(
+                    article: articles[index],
+                    onTap: () {
+                      onCardTap(articles[index].url);
+                    },
+                  );
+                },
+              ),
+            );
+
+
+          }
+          return const SizedBox();
+
+
+        },
+
+        /// =================== NEWS ===================
+        // Expanded(
+        //   child: selectedSource == null
+        //       ? const Center(child: CircularProgressIndicator())
+        //       : FutureBuilder<NewsModel>(
+        //     future:
+        //     ApiManger().getNewsBySource(selectedSource!),
+        //     builder: (context, snapshot) {
+        //       if (snapshot.connectionState ==
+        //           ConnectionState.waiting) {
+        //         return const Center(
+        //             child: CircularProgressIndicator());
+        //       }
+        //
+        //       if (snapshot.hasError) {
+        //         return Center(
+        //             child: Text(snapshot.error.toString()));
+        //       }
+        //
+        //       final articles =
+        //           snapshot.data?.articles ?? [];
+        //
+        //       if (articles.isEmpty) {
+        //         return const Center(
+        //             child: Text("No Articles"));
+        //       }
+        //
+        //       return ListView.separated(
+        //         padding: const EdgeInsets.all(16),
+        //         itemCount: articles.length,
+        //         separatorBuilder: (_, __) =>
+        //         const SizedBox(height: 10),
+        //         itemBuilder: (context, index) {
+        //           return NewsCard(
+        //             article: articles[index],
+        //             onTap: () {
+        //               onCardTap(articles[index].url);
+        //             },
+        //           );
+        //         },
+        //       );
+        //     },
+        //   ),
+        // ),
+        )
       ],
     );
   }
 
-  void onCategoryTap(CardModel cardModel) {
-    setState(() {
-      selectedCardCategory = cardModel;
-    });
-  }
   void onCardTap(String url) {
     Navigator.push(
       context,
@@ -154,16 +169,4 @@ class _HomeViewState extends State<HomeView> {
       ),
     );
   }
-  // void onCardTap(String url) async {
-  //   final Uri uri = Uri.parse(url);
-  //
-  //   if (await canLaunchUrl(uri)) {
-  //     await launchUrl(
-  //       uri,
-  //       mode: LaunchMode.externalApplication, // يفتح في المتصفح
-  //     );
-  //   } else {
-  //     throw 'Could not launch $url';
-  //   }
-  // }
 }

@@ -61,13 +61,13 @@ class News {
 
     factory News.fromJson(Map<dynamic, dynamic> json) => News(
         publishedAt: DateTime.parse(json["publishedAt"]),
-        author: json["author"],
-        urlToImage: json["urlToImage"],
-        description: json["description"],
+        author: json["author"] ?? '',
+        urlToImage: json["urlToImage"]??'',
+        description: json["description"]??'',
         source: Source.fromJson(json["source"]),
-        title: json["title"],
-        url: json["url"],
-        content: json["content"],
+        title: json["title"]??'',
+        url: json["url"]??'',
+        content: json["content"]??'',
     );
 
     Map<dynamic, dynamic> toJson() => {
