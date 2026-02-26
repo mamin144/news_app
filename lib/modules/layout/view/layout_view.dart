@@ -60,85 +60,86 @@ class _categoryState extends State<category> {
     ];
 
     bool isEven;
-    return Scaffold(
-      backgroundColor: Colors.white,
-      drawer: HomeDrawer(goToHome: _goToHome),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-
-        title: Text(
-          selectedCardCategory?.id ?? 'Home',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => NewsCubit(),
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Assets.icons.search.svg(
-              colorFilter: const ColorFilter.mode(
-                Colors.black,
-                BlendMode.srcIn,
-              ),
+        BlocProvider(
+          create: (context) =>
+          SourcesCubit()..getSources(selectedCardCategory!.id),
+        ),
+      ], child: Scaffold(
+        backgroundColor: Colors.white,
+        drawer: HomeDrawer(goToHome: _goToHome),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+
+          title: Text(
+            selectedCardCategory?.id ?? 'Home',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
             ),
           ),
-        ],
-      ),
-      body: selectedCardCategory == null
-          ? Padding(
+          actions: [
+            Padding(
               padding: const EdgeInsets.all(16),
-
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Good Morning\nHere is Some News For You",
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
-                  ),
-
-                  const SizedBox(height: 24),
-                  Expanded(
-                    child: ListView.separated(
-                      physics: const BouncingScrollPhysics(),
-                      itemBuilder: (context, index) => Directionality(
-                        textDirection: index.isEven
-                            ? TextDirection.rtl
-                            : TextDirection.ltr,
-
-                        child: CategoryCard(
-                          cardModel: CardModel(
-                            text: categories[index].text,
-                            image: categories[index].image,
-                            id: categories[index].id,
-                          ),
-                          onTap: _onCategoryTap,
-                        ),
-                      ),
-                      separatorBuilder: (context, index) =>
-                          SizedBox(height: 16),
-
-                      itemCount: categories.length,
-                    ),
-                  ),
-                ],
+              child: Assets.icons.search.svg(
+                colorFilter: const ColorFilter.mode(
+                  Colors.black,
+                  BlendMode.srcIn,
+                ),
               ),
-            )
-          : MultiBlocProvider(
-        providers: [
-          BlocProvider(
-            create: (context) => NewsCubit(),
-          ),
-          BlocProvider(
-            create: (context) =>
-                SourcesCubit()..getSources(selectedCardCategory!.id),
-          ),
-        ], child: HomeView(category: selectedCardCategory!.id),
-      )
+            ),
+          ],
+        ),
+        body: selectedCardCategory == null
+            ? Padding(
+                padding: const EdgeInsets.all(16),
 
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Good Morning\nHere is Some News For You",
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
+                    ),
+
+                    const SizedBox(height: 24),
+                    Expanded(
+                      child: ListView.separated(
+                        physics: const BouncingScrollPhysics(),
+                        itemBuilder: (context, index) => Directionality(
+                          textDirection: index.isEven
+                              ? TextDirection.rtl
+                              : TextDirection.ltr,
+
+                          child: CategoryCard(
+                            cardModel: CardModel(
+                              text: categories[index].text,
+                              image: categories[index].image,
+                              id: categories[index].id,
+                            ),
+                            onTap: _onCategoryTap,
+                          ),
+                        ),
+                        separatorBuilder: (context, index) =>
+                            SizedBox(height: 16),
+
+                        itemCount: categories.length,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            :  HomeView(category: selectedCardCategory!.id),
+
+
+      ),
     );
   }
 

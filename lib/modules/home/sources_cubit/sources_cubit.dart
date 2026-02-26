@@ -15,10 +15,13 @@ class SourcesCubit extends Cubit<SourcesState> {
    try{
      emit(SourcesLoading());
      var sources = await ApiManger().getSources(category);
-     emit(SourcesLoaded(sources));
+     emit(SourcesLoaded(
+       sources
+     ));
      return sources;
    }catch(e){
      emit(SourcesError(
+         e.toString()
      ));
      rethrow;
    }

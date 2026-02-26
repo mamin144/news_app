@@ -12,4 +12,7 @@ final class SourcesLoaded extends SourcesState{
   SourcesLoaded(this.sources);
 }
 
-final class SourcesError extends SourcesState{}
+final class SourcesError extends SourcesState{
+  final String message;
+  SourcesError(this.message);
+}

@@ -21,6 +21,12 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   int selectedIndex = 0;
   String? selectedSource;
+  @override
+  void initState() {
+    super.initState();
+    context.read<SourcesCubit>().getSources(widget.category);
+
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,19 +34,14 @@ class _HomeViewState extends State<HomeView> {
       children: [
         BlocBuilder<SourcesCubit, SourcesState>(
           builder: (context, state) {
-            if (state is SourcesLoading) {
+            if (state is SourcesInitial || state is SourcesLoading) {
               return const Center(child: CircularProgressIndicator());
-            }
-
-            if (state is SourcesError) {
-              return const Center(child: Text("Error"));
-            }
-
-            if (state is SourcesLoaded) {
+            } else if (state is SourcesLoaded) {
               final sources = state.sources.sources;
 
+
               if (sources.isEmpty) {
-                return const Center(child: Text("No Data"));
+                return const Center(child: Text("No Sources Found"));
               }
 
               selectedSource ??= sources.first.id;
@@ -48,9 +49,7 @@ class _HomeViewState extends State<HomeView> {
 
               return DefaultTabController(
                 length: sources.length,
-                initialIndex:
-                selectedIndex < sources.length ? selectedIndex : 0,
-
+                initialIndex: selectedIndex < sources.length ? selectedIndex : 0,
                 child: TabBar(
                   tabAlignment: TabAlignment.start,
                   isScrollable: true,
@@ -59,21 +58,19 @@ class _HomeViewState extends State<HomeView> {
                       selectedIndex = value;
                       selectedSource = sources[value].id;
                     });
-
                     context.read<NewsCubit>().getNews(selectedSource!);
                   },
-                  tabs: sources
-                      .map((source) => Tab(text: source.name))
-                      .toList(),
+                  tabs: sources.map((source) => Tab(text: source.name)).toList(),
                 ),
               );
+            } else if (state is SourcesError) {
+              return Center(child: Text(state.message));
             }
 
             return const SizedBox();
           },
         ),
-        BlocBuilder<NewsCubit, NewsState>(builder:(context, state) {
-
+        BlocBuilder<NewsCubit, NewsState>(builder: (context, state) {
           if (state is NewsLoading) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -104,58 +101,54 @@ class _HomeViewState extends State<HomeView> {
                 },
               ),
             );
-
-
           }
           return const SizedBox();
-
-
         },
 
-        /// =================== NEWS ===================
-        // Expanded(
-        //   child: selectedSource == null
-        //       ? const Center(child: CircularProgressIndicator())
-        //       : FutureBuilder<NewsModel>(
-        //     future:
-        //     ApiManger().getNewsBySource(selectedSource!),
-        //     builder: (context, snapshot) {
-        //       if (snapshot.connectionState ==
-        //           ConnectionState.waiting) {
-        //         return const Center(
-        //             child: CircularProgressIndicator());
-        //       }
-        //
-        //       if (snapshot.hasError) {
-        //         return Center(
-        //             child: Text(snapshot.error.toString()));
-        //       }
-        //
-        //       final articles =
-        //           snapshot.data?.articles ?? [];
-        //
-        //       if (articles.isEmpty) {
-        //         return const Center(
-        //             child: Text("No Articles"));
-        //       }
-        //
-        //       return ListView.separated(
-        //         padding: const EdgeInsets.all(16),
-        //         itemCount: articles.length,
-        //         separatorBuilder: (_, __) =>
-        //         const SizedBox(height: 10),
-        //         itemBuilder: (context, index) {
-        //           return NewsCard(
-        //             article: articles[index],
-        //             onTap: () {
-        //               onCardTap(articles[index].url);
-        //             },
-        //           );
-        //         },
-        //       );
-        //     },
-        //   ),
-        // ),
+          /// =================== NEWS ===================
+          // Expanded(
+          //   child: selectedSource == null
+          //       ? const Center(child: CircularProgressIndicator())
+          //       : FutureBuilder<NewsModel>(
+          //     future:
+          //     ApiManger().getNewsBySource(selectedSource!),
+          //     builder: (context, snapshot) {
+          //       if (snapshot.connectionState ==
+          //           ConnectionState.waiting) {
+          //         return const Center(
+          //             child: CircularProgressIndicator());
+          //       }
+          //
+          //       if (snapshot.hasError) {
+          //         return Center(
+          //             child: Text(snapshot.error.toString()));
+          //       }
+          //
+          //       final articles =
+          //           snapshot.data?.articles ?? [];
+          //
+          //       if (articles.isEmpty) {
+          //         return const Center(
+          //             child: Text("No Articles"));
+          //       }
+          //
+          //       return ListView.separated(
+          //         padding: const EdgeInsets.all(16),
+          //         itemCount: articles.length,
+          //         separatorBuilder: (_, __) =>
+          //         const SizedBox(height: 10),
+          //         itemBuilder: (context, index) {
+          //           return NewsCard(
+          //             article: articles[index],
+          //             onTap: () {
+          //               onCardTap(articles[index].url);
+          //             },
+          //           );
+          //         },
+          //       );
+          //     },
+          //   ),
+          // ),
         )
       ],
     );
