@@ -1,7 +1,10 @@
 import 'package:bloc/bloc.dart';
+import 'package:flutter/material.dart';
 import 'package:meta/meta.dart';
 import 'package:news_app/Api/api_manger.dart';
 import 'package:news_app/modules/home/model/news_model.dart';
+
+import '../view/url_view.dart';
 
 part 'news_state.dart';
 
@@ -23,4 +26,14 @@ class NewsCubit extends Cubit<NewsState> {
 
     }
   }
+
+  static void onCardTap(String url, BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => NewsWebView(url: url),
+      ),
+    );
+  }
+
 }

@@ -95,7 +95,7 @@ class _HomeViewState extends State<HomeView> {
                   return NewsCard(
                     article: articles[index],
                     onTap: () {
-                      onCardTap(articles[index].url);
+                      NewsCubit.onCardTap(articles[index].url, context);
                     },
                   );
                 },
@@ -154,12 +154,4 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  void onCardTap(String url) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => NewsWebView(url: url),
-      ),
-    );
-  }
 }
